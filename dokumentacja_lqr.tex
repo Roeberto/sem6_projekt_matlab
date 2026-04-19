@@ -1,0 +1,282 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{polski}
+\usepackage{lmodern}
+\usepackage{amsmath, amssymb}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{siunitx}
+\sisetup{output-decimal-marker={,}}
+
+\hypersetup{colorlinks=true, linkcolor=blue!60!black, urlcolor=blue!60!black}
+
+\lstdefinestyle{matlab}{
+  language=Matlab,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{green!40!black}\itshape,
+  stringstyle=\color{red!60!black},
+  numbers=left, numberstyle=\tiny\color{gray},
+  frame=single, rulecolor=\color{gray!40},
+  breaklines=true, showstringspaces=false,
+  tabsize=2,
+}
+
+\newtcolorbox{wzor}[1][]{colback=blue!4, colframe=blue!55!black,
+  fonttitle=\bfseries, title=#1}
+
+\title{\textbf{Sterowanie pompą zbiornika za pomocą regulatora LQR}\\
+       \large Ciągły model w~Simulinku --- dokumentacja projektowa}
+\author{Projekt semestralny 6}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Opis obiektu}
+
+Obiektem sterowania jest walcowy zbiornik cieczy o~polu podstawy
+$A = \pi r^2$, zasilany pompą o~regulowanym przepływie $Q_{in}(t)$.
+Odpływ przez zawór u~podstawy zbiornika opisany jest równaniem Torricellego.
+Dodatkowy niekontrolowany odpływ (np.\ nieszczelność, pobór wody) modelujemy
+jako zakłócenie $d(t)$. Zmienną stanu jest poziom cieczy $h(t)$, wielkością
+sterującą $Q_{in}(t)$, a~wyjściem również $h(t)$.
+
+\begin{center}
+\begin{tabular}{@{}lcl@{}}
+\toprule
+Parametr & Symbol & Wartość \\
+\midrule
+Przyspieszenie ziemskie   & $g$      & $\SI{9.81}{m/s^2}$ \\
+Promień zbiornika         & $r$      & $\SI{1.0}{m}$ \\
+Pole podstawy             & $A=\pi r^2$ & $\approx \SI{3.1416}{m^2}$ \\
+Wysokość zbiornika        & $H$      & $\SI{2.0}{m}$ \\
+Promień otworu wypływowego& $r_v$    & $\SI{0.04}{m}$ \\
+Pole otworu               & $A_v=\pi r_v^2$ & $\approx \SI{5.03e-3}{m^2}$ \\
+Współczynnik wypływu      & $\mu_v$  & $0{,}97$ \\
+Poziom zadany             & $h_{ref}$& $\SI{1.0}{m}$ \\
+Maksymalny wydatek pompy  & $Q_{pump}$ & $2\,Q_{in,0}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Model matematyczny}
+
+\subsection{Równanie bilansu masy}
+
+Przy założeniu stałej gęstości cieczy, bilans objętości w~zbiorniku
+o~stałym polu przekroju $A$:
+\begin{equation}
+A\,\dot h(t) \;=\; Q_{in}(t) - Q_{out}(t) - d(t).
+\end{equation}
+
+\subsection{Równanie Torricellego --- odpływ}
+
+Prędkość wypływu cieczy przez otwór na wysokości dna wynika z~zasady
+zachowania energii (Bernoulli) i~wynosi $v = \sqrt{2gh}$. Z~uwzględnieniem
+współczynnika kontrakcji strumienia $\mu_v$:
+\begin{equation}
+Q_{out}(t) \;=\; \mu_v A_v \sqrt{2\,g\,h(t)}.
+\end{equation}
+
+\subsection{Pełny model nieliniowy}
+
+Po podstawieniu:
+\begin{wzor}[Model nieliniowy]
+\begin{equation}
+\dot h(t) \;=\; \frac{1}{A}\Big[\,Q_{in}(t) \;-\; \mu_v A_v \sqrt{2 g\,h(t)} \;-\; d(t)\,\Big].
+\label{eq:nonlin}
+\end{equation}
+\end{wzor}
+
+\section{Punkt pracy}
+
+Stan ustalony ($\dot h=0$, $d=0$, $h=h_{ref}$) wymaga równości dopływu
+i~odpływu:
+\begin{equation}
+Q_{in,0} \;=\; Q_{out,0} \;=\; \mu_v A_v \sqrt{2\,g\,h_{ref}}.
+\end{equation}
+Dla przyjętych parametrów:
+\[
+Q_{in,0} = 0{,}97 \cdot \pi\,(0{,}04)^2 \cdot \sqrt{2 \cdot 9{,}81 \cdot 1{,}0}
+\approx \SI{0.02160}{m^3/s}.
+\]
+
+\section{Linearyzacja wokół punktu pracy}
+
+Wprowadzamy odchyłki: $\Delta h = h - h_{ref}$, $\Delta Q = Q_{in}-Q_{in,0}$.
+Rozwinięcie prawej strony~\eqref{eq:nonlin} w~szereg Taylora pierwszego rzędu
+wokół $(h_{ref},Q_{in,0})$ daje:
+\begin{equation}
+\Delta\dot h \;=\; a\,\Delta h + b\,\Delta Q + e\,d,
+\end{equation}
+gdzie
+\begin{align}
+a &= \left.\frac{\partial f}{\partial h}\right|_{0}
+  = \frac{1}{A}\cdot\left(-\mu_v A_v\cdot\frac{2g}{2\sqrt{2g h_{ref}}}\right)
+  = -\,\frac{\mu_v A_v}{A}\sqrt{\frac{g}{2\,h_{ref}}}, \\
+b &= \left.\frac{\partial f}{\partial Q_{in}}\right|_{0}
+  = \frac{1}{A}, \qquad
+e = -\frac{1}{A}.
+\end{align}
+
+\begin{wzor}[Model liniowy ciągły]
+\begin{equation}
+\Delta\dot h(t) = a\,\Delta h(t) + b\,\Delta Q(t), \qquad y(t)=\Delta h(t).
+\end{equation}
+\end{wzor}
+
+Wartości numeryczne:
+\[
+a \approx -\SI{3.437e-3}{s^{-1}}, \qquad
+b = 1/\pi \approx 0{,}3183, \qquad
+T_{ol} = -\tfrac{1}{a} \approx \SI{291}{s}.
+\]
+
+\section{Projekt regulatora LQR}
+
+\subsection{Wskaźnik jakości}
+
+Dla układu ciągłego SISO poszukujemy sterowania minimalizującego całkowy
+wskaźnik jakości:
+\begin{equation}
+J \;=\; \int_{0}^{\infty}\!\!\Big(q\,\Delta h^{2}(t) + r\,\Delta Q^{2}(t)\Big)\,dt,
+\qquad q=100,\;\; r=1.
+\end{equation}
+
+Waga $q$ karze odchyłki poziomu, $r$ --- wysiłek sterowania. Stosunek
+$q/r$ reguluje kompromis szybkość--energia.
+
+\subsection{Algebraiczne równanie Riccatiego (ARE)}
+
+Optymalne sterowanie statyczne $\Delta Q = -K\,\Delta h$ otrzymuje się
+z~rozwiązania ARE:
+\begin{equation}
+A^{T}P + PA - PBR^{-1}B^{T}P + Q = 0.
+\end{equation}
+Dla skalarnego układu ($A\to a$, $B\to b$, $P\in\mathbb{R}$):
+\begin{equation}
+2aP - \frac{b^{2}}{r}P^{2} + q = 0.
+\end{equation}
+Rozwiązanie dodatnie (wymagane przez stabilność):
+\begin{equation}
+P = \frac{r}{b^{2}}\left(a + \sqrt{a^{2} + \frac{b^{2}q}{r}}\right).
+\end{equation}
+
+\subsection{Wzmocnienie LQR}
+
+\begin{wzor}[Wzmocnienie regulatora]
+\begin{equation}
+K_{LQR} \;=\; \frac{bP}{r} \;=\; \frac{a + \sqrt{a^{2} + b^{2}q/r}}{b}
+\;\approx\; 9{,}989.
+\end{equation}
+\end{wzor}
+
+\subsection{Biegun zamkniętej pętli}
+
+\begin{equation}
+\lambda_{cl} = a - b K_{LQR} \approx -\SI{3.18}{s^{-1}},
+\qquad T_{cl} = -\tfrac{1}{\lambda_{cl}} \approx \SI{0.314}{s}.
+\end{equation}
+Układ zamknięty jest $\sim$\,925 razy szybszy od obiektu.
+
+\section{Prawo sterowania}
+
+Po powrocie do~zmiennych fizycznych:
+\begin{wzor}[Sterowanie pompy --- model ciągły]
+\begin{equation}
+\boxed{\;Q_{in}(t) \;=\; Q_{in,0} \;-\; K_{LQR}\,\big(h(t)-h_{ref}\big),\;}
+\end{equation}
+\end{wzor}
+z~saturacją fizyczną pompy $0 \le Q_{in}(t) \le Q_{pump}$.
+
+\section{Schemat modelu w~Simulinku}
+
+Model jest w~pełni \textbf{ciągły} (solver \texttt{ode45}), nieliniowy
+(blok \texttt{Sqrt} dla obiektu) oraz ze sprzężeniem zwrotnym poziomu do
+regulatora liniowego.
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Blok Simulinka & Funkcja / wzór \\
+\midrule
+\texttt{Constant} \textsf{h\_ref}         & wartość zadana poziomu \\
+\texttt{Sum} $(+,-)$                       & błąd $e = h_{ref}-h$ \\
+\texttt{Gain} \textsf{K\_LQR}              & $-K_{LQR}\cdot\Delta h$ \\
+\texttt{Constant} \textsf{Q\_in\_0}        & offset punktu pracy \\
+\texttt{Sum} $(+,+)$                       & $Q_{in,0}-K_{LQR}(h-h_{ref})$ \\
+\texttt{Saturation} $[0,Q_{pump}]$          & ograniczenie pompy \\
+\texttt{Sum} $(+,-,-)$                     & $Q_{in}-Q_{out}-d$ \\
+\texttt{Gain} $1/A$                        & dzielenie przez pole podstawy \\
+\texttt{Integrator}                        & $h(t)=\int\dot h\,dt$, IC $=h_0$ \\
+\texttt{Gain}$\cdot$\texttt{Sqrt}$\cdot$\texttt{Gain} & $Q_{out}=\mu_v A_v\sqrt{2gh}$ \\
+\texttt{Constant} \textsf{d}               & zakłócenie (domyślnie 0) \\
+\texttt{Scope}                             & $h(t)$, $Q_{in}(t)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Struktura przepływu sygnałów:
+\begin{center}
+\small
+\texttt{h\_ref} $\to$ $\sum$ $\xrightarrow{e}$ \texttt{K\_LQR} $\to$
+$\sum(+Q_{in,0})$ $\to$ sat. $\xrightarrow{Q_{in}}$
+$\sum(-Q_{out},-d)$ $\to$ $1/A$ $\to$ $\int$ $\to$ $h(t)$
+$\to$ (sprz.\ zwr.) oraz $\to$ $\mu_v A_v\sqrt{2g\cdot}$ $\to$ $Q_{out}$.
+\end{center}
+
+\section{Skrypt generujący model}
+
+Model tworzony jest programowo skryptem \texttt{build\_simulink\_lqr.m},
+który oblicza parametry $a$, $b$, $K_{LQR}$, wywołuje \texttt{new\_system},
+\texttt{add\_block} oraz \texttt{add\_line}, a~następnie zapisuje plik
+\texttt{projekt\_lqr\_ciagly.slx}. Uruchomienie:
+
+\begin{lstlisting}[style=matlab]
+run build_simulink_lqr.m
+sim('projekt_lqr_ciagly')
+\end{lstlisting}
+
+\section{Wyniki projektowe (liczbowo)}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Wielkość & Wzór & Wartość \\
+\midrule
+$Q_{in,0}$ & $\mu_v A_v\sqrt{2gh_{ref}}$        & \SI{0.02160}{m^3/s} \\
+$a$        & $-\tfrac{\mu_v A_v}{A}\sqrt{g/(2h_{ref})}$ & \SI{-3.437e-3}{s^{-1}} \\
+$b$        & $1/A$                              & $0{,}3183$ \\
+$P$        & $\tfrac{r}{b^2}(a+\sqrt{a^2+b^2q/r})$ & $31{,}37$ \\
+$K_{LQR}$  & $bP/r$                             & $9{,}989$ \\
+$\lambda_{cl}$ & $a-bK_{LQR}$                   & \SI{-3.18}{s^{-1}} \\
+$T_{cl}$   & $-1/\lambda_{cl}$                  & \SI{0.314}{s} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Wnioski}
+
+\begin{itemize}\setlength{\itemsep}{2pt}
+\item Obiekt jest obiektem pierwszego rzędu nieliniowym ---
+      linearyzacja w~punkcie pracy jest wystarczająca, bo LQR utrzymuje
+      $h$ blisko $h_{ref}$, gdzie błąd linearyzacji jest mały.
+\item Wagi $q=100$, $r=1$ dają bieguny zamkniętej pętli w~$-3{,}18\,\mathrm{s}^{-1}$,
+      co odpowiada czasowi regulacji rzędu sekund.
+\item Saturacja $[0,Q_{pump}]$ zabezpiecza przed ujemnym przepływem
+      (pompa nie wypompowuje wstecznie) oraz przed przekroczeniem
+      wydajności fizycznej pompy.
+\item W~wersji ciągłej nie używamy histerezy ani przełączania ON/OFF
+      obecnych w~oryginalnym skrypcie \texttt{sem6\_projekt\_v1.m};
+      pompa pracuje z~ciągle modulowanym wydatkiem.
+\end{itemize}
+
+\end{document}
