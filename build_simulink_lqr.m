@@ -97,6 +97,14 @@ add('simulink/Sinks/Scope','Scope_Q',[440 5 480 35]);
 add('simulink/Sources/Constant','h_ref_vis',[620 10 660 40],...
     'Value','h_ref');
 
+% --- To Workspace: h, Q_in, Q_out (format Timeseries) --------------------
+add('simulink/Sinks/To Workspace','Log_h',[680 130 730 160],...
+    'VariableName','h_ts','SaveFormat','Timeseries');
+add('simulink/Sinks/To Workspace','Log_Qin',[400 250 450 280],...
+    'VariableName','Qin_ts','SaveFormat','Timeseries');
+add('simulink/Sinks/To Workspace','Log_Qout',[680 170 730 200],...
+    'VariableName','Qout_ts','SaveFormat','Timeseries');
+
 %% ── 7. POŁĄCZENIA ────────────────────────────────────────────────────────
 L = @(a,b) add_line(mdl,a,b,'autorouting','smart');
 
@@ -126,6 +134,11 @@ L('muAv/1','bilans/2');
 
 % zakłócenie
 L('d/1','bilans/3');
+
+% To Workspace – logowanie sygnałów
+add_line(mdl,'Int_h/1','Log_h/1','autorouting','smart');
+add_line(mdl,'SatPompy/1','Log_Qin/1','autorouting','smart');
+add_line(mdl,'muAv/1','Log_Qout/1','autorouting','smart');
 
 %% ── 8. PARAMETRY WORKSPACE (potrzebne do symulacji) ──────────────────────
 assignin('base','g',g); assignin('base','A',A); assignin('base','H',H);
