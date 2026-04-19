@@ -27,6 +27,13 @@
   frame=single, rulecolor=\color{gray!40},
   breaklines=true, showstringspaces=false,
   tabsize=2,
+  extendedchars=true, inputencoding=utf8,
+  literate={ą}{{\k{a}}}1 {ę}{{\k{e}}}1 {ó}{{\'o}}1
+           {ż}{{\.z}}1 {ź}{{\'z}}1 {ć}{{\'c}}1
+           {ś}{{\'s}}1 {ń}{{\'n}}1 {ł}{{\l}}1
+           {Ą}{{\k{A}}}1 {Ę}{{\k{E}}}1 {Ó}{{\'O}}1
+           {Ż}{{\.Z}}1 {Ź}{{\'Z}}1 {Ć}{{\'C}}1
+           {Ś}{{\'S}}1 {Ń}{{\'N}}1 {Ł}{{\L}}1,
 }
 
 \newtcolorbox{wzor}[1][]{colback=blue!4, colframe=blue!55!black,
@@ -109,36 +116,102 @@ Q_{in,0} = 0{,}97 \cdot \pi\,(0{,}04)^2 \cdot \sqrt{2 \cdot 9{,}81 \cdot 1{,}0}
 \approx \SI{0.02160}{m^3/s}.
 \]
 
-\section{Linearyzacja wokół punktu pracy}
+\section{Linearyzacja --- wyznaczenie macierzy \texorpdfstring{$A,B,C,D$}{A,B,C,D}}
 
-Wprowadzamy odchyłki: $\Delta h = h - h_{ref}$, $\Delta Q = Q_{in}-Q_{in,0}$.
-Rozwinięcie prawej strony~\eqref{eq:nonlin} w~szereg Taylora pierwszego rzędu
-wokół $(h_{ref},Q_{in,0})$ daje:
+\subsection{Forma przestrzeni stanu}
+
+Ogólną postać ciągłego modelu liniowego zapisujemy jako:
 \begin{equation}
-\Delta\dot h \;=\; a\,\Delta h + b\,\Delta Q + e\,d,
+\dot{\mathbf x}(t) = \mathbf A\,\mathbf x(t) + \mathbf B\,\mathbf u(t),\qquad
+\mathbf y(t) = \mathbf C\,\mathbf x(t) + \mathbf D\,\mathbf u(t),
 \end{equation}
-gdzie
+gdzie macierze $\mathbf A \in \mathbb R^{n\times n}$, $\mathbf B\in\mathbb R^{n\times m}$,
+$\mathbf C\in\mathbb R^{p\times n}$, $\mathbf D\in\mathbb R^{p\times m}$. W~naszym
+obiekcie układ jest SISO o~jednym stanie (poziom cieczy), zatem $n=m=p=1$ i~wszystkie
+macierze degenerują się do skalarów.
+
+\subsection{Wybór zmiennych stanu, sterowania, wyjścia}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Oznaczenie & Symbol fizyczny & Odchyłka (stan liniowy) \\
+\midrule
+Zmienna stanu $x$   & $h$     & $\Delta h = h - h_{ref}$ \\
+Sterowanie $u$      & $Q_{in}$& $\Delta Q = Q_{in} - Q_{in,0}$ \\
+Wyjście $y$         & $h$     & $\Delta h$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Punkt pracy $(h_{ref},Q_{in,0})$ jest stacjonarny: $f(h_{ref},Q_{in,0}) = 0$,
+dzięki czemu w~równaniach liniowych znika wyraz stały.
+
+\subsection{Metoda: rozwinięcie Taylora pierwszego rzędu}
+
+Nieliniową funkcję prawej strony zapisujemy jako:
+\begin{equation}
+f(h,Q_{in}) \;=\; \frac{1}{A}\Big[Q_{in} - \mu_v A_v\sqrt{2gh}\Big].
+\end{equation}
+Rozwinięcie wokół $(h_{ref},Q_{in,0})$ daje:
+\begin{equation}
+f(h,Q_{in}) \;\approx\; \underbrace{f(h_{ref},Q_{in,0})}_{=0}
++ \left.\frac{\partial f}{\partial h}\right|_{0}\!\Delta h
++ \left.\frac{\partial f}{\partial Q_{in}}\right|_{0}\!\Delta Q.
+\end{equation}
+Wyliczenie pochodnych cząstkowych:
 \begin{align}
-a &= \left.\frac{\partial f}{\partial h}\right|_{0}
-  = \frac{1}{A}\cdot\left(-\mu_v A_v\cdot\frac{2g}{2\sqrt{2g h_{ref}}}\right)
-  = -\,\frac{\mu_v A_v}{A}\sqrt{\frac{g}{2\,h_{ref}}}, \\
-b &= \left.\frac{\partial f}{\partial Q_{in}}\right|_{0}
-  = \frac{1}{A}, \qquad
-e = -\frac{1}{A}.
+\left.\frac{\partial f}{\partial h}\right|_{0}
+&= \frac{1}{A}\cdot\left(-\mu_v A_v\cdot\frac{d}{dh}\sqrt{2gh}\right)\bigg|_{h_{ref}}
+ = \frac{1}{A}\cdot\left(-\mu_v A_v\cdot\frac{2g}{2\sqrt{2gh_{ref}}}\right) \notag \\
+&= -\,\frac{\mu_v A_v}{A}\,\sqrt{\frac{g}{2\,h_{ref}}}, \\[2pt]
+\left.\frac{\partial f}{\partial Q_{in}}\right|_{0} &= \frac{1}{A}.
 \end{align}
 
-\begin{wzor}[Model liniowy ciągły]
+\subsection{Jawna postać macierzy \texorpdfstring{$A,B,C,D$}{A,B,C,D}}
+
+\begin{wzor}[Macierze modelu liniowego]
 \begin{equation}
-\Delta\dot h(t) = a\,\Delta h(t) + b\,\Delta Q(t), \qquad y(t)=\Delta h(t).
+\mathbf A = \left.\frac{\partial f}{\partial h}\right|_{0}
+= -\frac{\mu_v A_v}{A}\sqrt{\frac{g}{2\,h_{ref}}},\qquad
+\mathbf B = \left.\frac{\partial f}{\partial Q_{in}}\right|_{0} = \frac{1}{A},
+\end{equation}
+\begin{equation}
+\mathbf C = \left.\frac{\partial h}{\partial h}\right|_{0} = 1,\qquad
+\mathbf D = \left.\frac{\partial h}{\partial Q_{in}}\right|_{0} = 0.
 \end{equation}
 \end{wzor}
 
-Wartości numeryczne:
-\[
-a \approx -\SI{3.437e-3}{s^{-1}}, \qquad
-b = 1/\pi \approx 0{,}3183, \qquad
-T_{ol} = -\tfrac{1}{a} \approx \SI{291}{s}.
-\]
+\noindent\textbf{Uzasadnienie $\mathbf C,\mathbf D$:} wyjściem jest mierzony
+poziom cieczy $y=h$ (tu: odchyłka $\Delta h$). Zatem $y$ zależy wprost od
+stanu ($C=1$), a~sterowanie nie wchodzi bezpośrednio do wyjścia ($D=0$), bo
+zmiana $Q_{in}$ wpływa na $h$ dopiero przez całkę.
+
+\subsection{Wartości numeryczne}
+
+Podstawiając: $g=9{,}81$, $A=\pi\approx 3{,}1416$, $A_v=\pi\cdot 0{,}04^{2}
+\approx 5{,}027\cdot 10^{-3}$, $\mu_v = 0{,}97$, $h_{ref}=1$:
+\begin{align}
+\mathbf A &= -\frac{0{,}97\cdot 5{,}027\!\cdot\! 10^{-3}}{3{,}1416}
+             \sqrt{\tfrac{9{,}81}{2}}
+           \approx -\SI{3.437e-3}{s^{-1}}, \\
+\mathbf B &= \tfrac{1}{\pi} \approx 0{,}3183, \qquad
+\mathbf C = 1,\qquad
+\mathbf D = 0.
+\end{align}
+Stała czasowa obiektu bez regulatora: $T_{ol} = -1/\mathbf A \approx \SI{291}{s}$.
+Biegun obiektu leży w~lewej półpłaszczyźnie, więc obiekt jest stabilny,
+lecz bardzo powolny --- stąd potrzeba regulatora.
+
+\subsection{Implementacja w~MATLAB-ie}
+
+\begin{lstlisting}[style=matlab]
+A_lin = -mu_v*A_v*sqrt(g/(2*h_ref))/A;   % A
+B_lin =  1/A;                            % B
+C_lin =  1;                              % C
+D_lin =  0;                              % D
+sys   =  ss(A_lin,B_lin,C_lin,D_lin);    % obiekt liniowy
+\end{lstlisting}
 
 \section{Projekt regulatora LQR}
 
@@ -154,38 +227,128 @@ J \;=\; \int_{0}^{\infty}\!\!\Big(q\,\Delta h^{2}(t) + r\,\Delta Q^{2}(t)\Big)\,
 Waga $q$ karze odchyłki poziomu, $r$ --- wysiłek sterowania. Stosunek
 $q/r$ reguluje kompromis szybkość--energia.
 
-\subsection{Algebraiczne równanie Riccatiego (ARE)}
+\subsection{Algebraiczne równanie Riccatiego --- wyprowadzenie}
 
-Optymalne sterowanie statyczne $\Delta Q = -K\,\Delta h$ otrzymuje się
-z~rozwiązania ARE:
-\begin{equation}
-A^{T}P + PA - PBR^{-1}B^{T}P + Q = 0.
-\end{equation}
-Dla skalarnego układu ($A\to a$, $B\to b$, $P\in\mathbb{R}$):
-\begin{equation}
-2aP - \frac{b^{2}}{r}P^{2} + q = 0.
-\end{equation}
-Rozwiązanie dodatnie (wymagane przez stabilność):
-\begin{equation}
-P = \frac{r}{b^{2}}\left(a + \sqrt{a^{2} + \frac{b^{2}q}{r}}\right).
-\end{equation}
+\subsubsection*{Zasada dynamicznego programowania}
 
-\subsection{Wzmocnienie LQR}
-
-\begin{wzor}[Wzmocnienie regulatora]
+Dla układu ciągłego LTI i kwadratowego wskaźnika jakości postulujemy
+\emph{funkcję wartości} (Bellmana) o~formie kwadratowej:
 \begin{equation}
-K_{LQR} \;=\; \frac{bP}{r} \;=\; \frac{a + \sqrt{a^{2} + b^{2}q/r}}{b}
-\;\approx\; 9{,}989.
+V(\mathbf x) \;=\; \mathbf x^{T} \mathbf P\,\mathbf x, \qquad
+\mathbf P = \mathbf P^{T} \succ 0.
+\end{equation}
+Równanie Hamiltona--Jacobiego--Bellmana (HJB):
+\begin{equation}
+0 = \min_{\mathbf u}\Big\{\,\mathbf x^{T}\mathbf Q\mathbf x
++ \mathbf u^{T}\mathbf R\mathbf u
++ \nabla V^{T}(\mathbf A\mathbf x + \mathbf B\mathbf u)\Big\}.
+\end{equation}
+Minimum po $\mathbf u$ (przyrównanie pochodnej do zera):
+\begin{equation}
+\mathbf u^{*} \;=\; -\mathbf R^{-1}\mathbf B^{T}\mathbf P\,\mathbf x
+\;\equiv\; -\mathbf K\,\mathbf x.
+\label{eq:optu}
+\end{equation}
+Podstawienie $\mathbf u^{*}$ do HJB i~skrócenie $\mathbf x^{T}(\cdot)\mathbf x$
+prowadzi do \textbf{ciągłego algebraicznego równania Riccatiego (CARE)}:
+
+\begin{wzor}[CARE]
+\begin{equation}
+\mathbf A^{T}\mathbf P + \mathbf P\,\mathbf A
+- \mathbf P\,\mathbf B\,\mathbf R^{-1}\mathbf B^{T}\mathbf P
++ \mathbf Q \;=\; \mathbf 0.
+\label{eq:care}
 \end{equation}
 \end{wzor}
 
+\subsubsection*{Wzmocnienie optymalne}
+
+Z~\eqref{eq:optu} bezpośrednio wynika postać wzmocnienia LQR:
+\begin{equation}
+\mathbf K_{LQR} \;=\; \mathbf R^{-1}\mathbf B^{T}\mathbf P.
+\label{eq:Klqr}
+\end{equation}
+Macierz $\mathbf P$ wybiera się jako \emph{jedyne dodatnio określone}
+rozwiązanie~\eqref{eq:care} --- warunek ten gwarantuje stabilność
+zamkniętej pętli $(\mathbf A-\mathbf B\mathbf K)$.
+
+\subsection{Zastosowanie CARE do naszego obiektu}
+
+\subsubsection*{Sprowadzenie do wymiaru skalarnego}
+
+Dla $n=m=1$ macierze redukują się do skalarów:
+$\mathbf A\to a$, $\mathbf B\to b$, $\mathbf Q\to q$, $\mathbf R\to r$,
+$\mathbf P\to P$. Równanie~\eqref{eq:care} przyjmuje postać:
+\begin{equation}
+a P + P a - P\,b\,r^{-1}\,b\,P + q \;=\; 0
+\;\;\Longrightarrow\;\;
+\boxed{\,2aP - \frac{b^{2}}{r}\,P^{2} + q = 0\,}.
+\label{eq:careS}
+\end{equation}
+
+\subsubsection*{Rozwiązanie równania kwadratowego względem \texorpdfstring{$P$}{P}}
+
+Przepisujemy~\eqref{eq:careS} jako $\tfrac{b^{2}}{r}P^{2} - 2aP - q = 0$.
+Dyskryminanta:
+\begin{equation}
+\Delta = (2a)^{2} + 4\tfrac{b^{2}}{r}\,q = 4\Big(a^{2} + \tfrac{b^{2}q}{r}\Big).
+\end{equation}
+Dwa pierwiastki:
+\begin{equation}
+P_{\pm} = \frac{2a \pm 2\sqrt{a^{2} + b^{2}q/r}}{2\,b^{2}/r}
+        = \frac{r}{b^{2}}\Big(a \pm \sqrt{a^{2} + b^{2}q/r}\Big).
+\end{equation}
+Ponieważ $\sqrt{a^{2}+b^{2}q/r} > |a|$, tylko pierwiastek ze znakiem
+"+" daje $P>0$. Dlatego:
+\begin{equation}
+\boxed{\,P = \frac{r}{b^{2}}\Big(a + \sqrt{a^{2} + b^{2}q/r}\Big)\,}.
+\end{equation}
+
+\subsubsection*{Obliczenie wzmocnienia $K_{LQR}$}
+
+Ze wzoru~\eqref{eq:Klqr}:
+\begin{wzor}[Wzmocnienie regulatora]
+\begin{equation}
+K_{LQR} \;=\; \frac{bP}{r}
+       \;=\; \frac{a + \sqrt{a^{2} + b^{2}q/r}}{b}.
+\end{equation}
+\end{wzor}
+
+\noindent Podstawienie liczbowe ($a=-3{,}437\!\cdot\!10^{-3}$, $b=0{,}3183$,
+$q=100$, $r=1$):
+\begin{align}
+a^{2} &= 1{,}181\cdot 10^{-5}, \\
+\tfrac{b^{2}q}{r} &= 0{,}1013 \cdot 100 = 10{,}13, \\
+\sqrt{a^{2} + \tfrac{b^{2}q}{r}} &= \sqrt{10{,}13} \approx 3{,}183, \\
+K_{LQR} &= \frac{-0{,}003437 + 3{,}183}{0{,}3183} \approx 9{,}989.
+\end{align}
+
+\subsection{Weryfikacja --- rozwiązanie CARE w~MATLAB-ie}
+
+Funkcje \texttt{lqr} oraz \texttt{care} rozwiązują~\eqref{eq:care}
+numerycznie algorytmem opartym na Hamiltonianie lub dekompozycji Schura:
+
+\begin{lstlisting}[style=matlab]
+[K_lqr, P, poles_cl] = lqr(A_lin, B_lin, Q_lqr, R_lqr);
+% lub równoważnie:
+% [P, poles_cl, K_lqr] = care(A_lin, B_lin, Q_lqr, R_lqr);
+\end{lstlisting}
+\noindent Wynikiem jest: $P\approx 31{,}37$, $K_{LQR}\approx 9{,}989$,
+$\lambda_{cl}\approx -3{,}183$ --- zgodność z~wyprowadzeniem analitycznym.
+
 \subsection{Biegun zamkniętej pętli}
 
+Dla sterowania $\Delta Q = -K_{LQR}\,\Delta h$ równanie zamkniętego układu:
 \begin{equation}
-\lambda_{cl} = a - b K_{LQR} \approx -\SI{3.18}{s^{-1}},
-\qquad T_{cl} = -\tfrac{1}{\lambda_{cl}} \approx \SI{0.314}{s}.
+\Delta\dot h \;=\; \underbrace{(a - b K_{LQR})}_{\lambda_{cl}}\,\Delta h.
 \end{equation}
-Układ zamknięty jest $\sim$\,925 razy szybszy od obiektu.
+Podstawienie:
+\begin{equation}
+\lambda_{cl} = -0{,}003437 - 0{,}3183\cdot 9{,}989 \approx -\SI{3.18}{s^{-1}},
+\qquad T_{cl} \approx \SI{0.314}{s}.
+\end{equation}
+Układ zamknięty jest $\sim$\,925 razy szybszy od obiektu otwartego
+($T_{ol}\approx \SI{291}{s}$).
 
 \section{Prawo sterowania}
 
